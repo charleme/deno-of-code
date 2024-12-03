@@ -1,28 +1,16 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@std/fs@^1.0.6": "1.0.6",
-    "jsr:@std/path@^1.0.8": "1.0.8",
-    "jsr:@valibot/valibot@~0.42.1": "0.42.1"
+    "jsr:@valibot/valibot@1.0.0-beta.9": "1.0.0-beta.9"
   },
   "jsr": {
-    "@std/fs@1.0.6": {
-      "integrity": "42b56e1e41b75583a21d5a37f6a6a27de9f510bcd36c0c85791d685ca0b85fa2",
-      "dependencies": [
-        "jsr:@std/path"
-      ]
-    },
-    "@std/path@1.0.8": {
-      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
-    },
-    "@valibot/valibot@0.42.1": {
-      "integrity": "ba0f6f7964aaeec0e4b1f793d575061f325ae6254cbb9d7ff01fb65068a0a23b"
+    "@valibot/valibot@1.0.0-beta.9": {
+      "integrity": "6daab052136313c72752e33cd9b2ca86ea7335562264175c3d454c6daecd6bfe"
     }
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/fs@^1.0.6",
-      "jsr:@valibot/valibot@~0.42.1"
+      "jsr:@valibot/valibot@1.0.0-beta.9"
     ]
   }
 }

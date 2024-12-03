@@ -1,9 +1,9 @@
 {
   "tasks": {
-    "dev": "deno run --allow-read --watch run.ts"
+    "last-day": "deno run --allow-read --watch run-last-day.ts",
+    "ci": "deno run --allow-read run-all.ts"
   },
   "imports": {
-    "@std/fs": "jsr:@std/fs@^1.0.6",
-    "@valibot/valibot": "jsr:@valibot/valibot@^0.42.1"
+    "@valibot/valibot": "jsr:@valibot/valibot@1.0.0-beta.9"
   }
 }

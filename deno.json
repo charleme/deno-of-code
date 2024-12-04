@@ -1,5 +1,6 @@
 {
   "tasks": {
+    "add-day": "deno run --allow-read --allow-write add-day-folder.ts",
     "last-day": "deno run --allow-read --watch run-last-day.ts",
     "ci": "deno run --allow-read run-all.ts"
   },

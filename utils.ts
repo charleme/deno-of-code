@@ -116,4 +116,4 @@ const runAllTests = async () => {
   return true;
 };
 
-export { runAllTests, runLastDayTests };
+export { getLastDayNumber, runAllTests, runLastDayTests };

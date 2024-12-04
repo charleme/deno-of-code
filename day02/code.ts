@@ -64,6 +64,5 @@ const isValidLine = (line: number[]): number | null => {
 
     prev = lineItem;
   }
-  console.log({ line });
   return null;
 };

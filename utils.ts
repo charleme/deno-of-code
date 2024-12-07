@@ -1,4 +1,5 @@
 import * as v from "@valibot/valibot";
+import {Test, testRunnerInterface} from "./helpers/test-runner-interface.ts";
 
 const PREFIXE_FICHIER_INPUT = "input";
 const PREFIXE_FICHIER_OUTPUT = "output";
@@ -51,49 +52,74 @@ const getLastDayNumber = () => {
   return count - 1;
 };
 
+const resolverSchema = v.pipe(
+  v.function(),
+  v.args(v.tuple([v.array(v.string())])),
+  v.returns(v.string()),
+);
+
+type Resolver = v.InferOutput<typeof resolverSchema>;
+
+const runTest = async (
+  day: number,
+  step: 1 | 2,
+  testNumber: number,
+  resolver: Resolver,
+) => {
+  const { input, output } = getTestFilePaths(day, testNumber + 1, step);
+  const [inputContent, outputContent] = await Promise.all([
+    await Deno.readTextFile(input),
+    await Deno.readTextFile(output),
+  ]);
+
+  const inputLines = inputContent.split(/\r?\n/g);
+  const outputLines = outputContent;
+
+  const result = resolver(inputLines);
+
+  // console.log(`Expected: ${outputLines}`);
+  // console.log(`Got: ${result}`);
+  return result === outputLines;
+  // if (result !== outputLines) {
+  //   console.log(
+  //     `Day ${day}, Step ${step}: Test ${testNumber + 1} failed`,
+  //   );
+  //
+  //   return false;
+  // }
+  // console.log(
+  //   `Day ${day}, Step ${step}: Test ${testNumber + 1} passed\n`,
+  // );
+  // return true;
+};
+
 const runDayTests = async (day: number, step: 1 | 2) => {
   const testCount = getTestCount(day, step);
+  const promises = [];
+
+  const { [`step${step}`]: resolver } = await import(
+    "./" + getDayCodeFilePath(day)
+  );
+
+  const parsedResolver = v.parse(resolverSchema, resolver);
 
   for (let i = 0; i < testCount; i++) {
-    const { input, output } = getTestFilePaths(day, i + 1, step);
-    const inputContent = Deno.readTextFileSync(input);
-    const outputContent = Deno.readTextFileSync(output);
-
-    const inputLines = inputContent.split(/\r?\n/g);
-    const outputLines = outputContent;
-
-    const { [`step${step}`]: codeFunction } = await import(
-      "./" + getDayCodeFilePath(day)
-    );
-    const codeSchema = v.pipe(
-      v.function(),
-      v.args(v.tuple([v.array(v.string())])),
-      v.returns(v.string()),
+    const promise = runTest(day, step, i, parsedResolver);
+    testRunnerInterface.addTest(
+      new Test(promise, `Day ${day}, Step ${step}: Test ${i + 1}`),
     );
 
-    const parsedCode = v.parse(codeSchema, codeFunction);
-
-    const result = parsedCode(inputLines);
-
-    console.log(`Expected: ${outputLines}`);
-    console.log(`Got: ${result}`);
-    if (result !== outputLines) {
-      console.log(
-        `Day ${day}, Step ${step}: Test ${i + 1}/${testCount} failed`,
-      );
-
-      return false;
-    }
-    console.log(
-      `Day ${day}, Step ${step}: Test ${i + 1}/${testCount} passed\n`,
-    );
+    promises.push(promise);
   }
-  console.log(`Day ${day}, Step ${step}: All tests passed\n`);
+  // console.log(`Day ${day}, Step ${step}: All tests passed\n`);
 
-  return true;
+  const results = await Promise.all(promises);
+
+  return results.every((result) => result);
 };
 
 const runLastDayTests = async () => {
+  testRunnerInterface.init();
   const lastDay = getLastDayNumber();
 
   const step1Result = await runDayTests(lastDay, 1);
@@ -104,16 +130,18 @@ const runLastDayTests = async () => {
 };
 
 const runAllTests = async () => {
+  testRunnerInterface.init();
   const lastDay = getLastDayNumber();
+  const promises = [];
+
   for (let i = 1; i <= lastDay; i++) {
-    if (!await runDayTests(i, 1)) {
-      return false;
-    }
-    if (!await runDayTests(i, 2)) {
-      return false;
-    }
+    promises.push(runDayTests(i, 1));
+    promises.push(runDayTests(i, 2));
   }
-  return true;
+
+  const results = await Promise.all(promises);
+
+  return results.every((result) => result);
 };
 
 export { getLastDayNumber, runAllTests, runLastDayTests };

@@ -1,6 +1,67 @@
 export function step1(input: string[]): string {
   const parsedInput = parseInput(input);
 
+  return getVisitedPositions(parsedInput).size.toString();
+}
+
+export function step2(input: string[]): string {
+  const parsedDefaultInput = parseInput(input);
+  const visitedStringPositions = getVisitedPositions(parsedDefaultInput);
+  const visitedPositions = Array.from(visitedStringPositions).map(
+    getPositionFromString,
+  );
+
+  let sum = 0;
+  const defaultDir = "N";
+  const defaultPos = getAgentCoordinates(parsedDefaultInput);
+
+  for (const visitedPosition of visitedPositions) {
+    const [i, j] = visitedPosition;
+    let pos = defaultPos;
+    const visited = new Set<string>();
+    let dir: DIR = defaultDir;
+    if (
+      isPositionBlock([i, j], parsedDefaultInput) ||
+      (i === defaultPos[0] && j === defaultPos[1])
+    ) {
+      continue;
+    }
+
+    const parsedInput = structuredClone(parsedDefaultInput);
+    parsedInput[j][i] = "#";
+    while (pos) {
+      const [x, y] = pos;
+      const posStr = getStringPositionWithDir(x, y, dir);
+
+      if (visited.has(posStr)) {
+        sum++;
+        break;
+      }
+
+      visited.add(posStr);
+
+      let nextPosition = getNextPosition(x, y, dir, parsedInput);
+
+      while (
+        nextPosition !== null && isPositionBlock(nextPosition, parsedInput)
+      ) {
+        dir = getNextDirection(dir);
+        nextPosition = getNextPosition(x, y, dir, parsedInput);
+      }
+
+      if (nextPosition === null) {
+        break;
+      }
+
+      pos = nextPosition;
+    }
+    step1(input);
+  }
+
+  return sum.toString();
+}
+
+const getVisitedPositions = (parsedInput: string[][]): Set<string> => {
   const visited = new Set<string>();
   let dir: DIR = "N";
   let pos = getAgentCoordinates(parsedInput);
@@ -27,65 +88,8 @@ export function step1(input: string[]): string {
     pos = nextPosition;
   }
 
-  return visited.size.toString();
-}
-
-export function step2(input: string[]): string {
-  const parsedDefaultInput = parseInput(input);
-
-  const N = input[0].length;
-  const M = input.length;
-
-  let sum = 0;
-  const defaultDir = "N";
-  const defaultPos = getAgentCoordinates(parsedDefaultInput);
-
-  for (let i = 0; i < N; i++) {
-    for (let j = 0; j < M; j++) {
-      let pos = defaultPos;
-      const visited = new Set<string>();
-      let dir: DIR = defaultDir;
-      if (
-        isPositionBlock([i, j], parsedDefaultInput) ||
-        (i === defaultPos[0] && j === defaultPos[1])
-      ) {
-        continue;
-      }
-
-      const parsedInput = structuredClone(parsedDefaultInput);
-      parsedInput[j][i] = "#";
-      while (pos) {
-        const [x, y] = pos;
-        const posStr = getStringPositionWithDir(x, y, dir);
-
-        if (visited.has(posStr)) {
-          sum++;
-          break;
-        }
-
-        visited.add(posStr);
-
-        let nextPosition = getNextPosition(x, y, dir, parsedInput);
-
-        while (
-          nextPosition !== null && isPositionBlock(nextPosition, parsedInput)
-        ) {
-          dir = getNextDirection(dir);
-          nextPosition = getNextPosition(x, y, dir, parsedInput);
-        }
-
-        if (nextPosition === null) {
-          break;
-        }
-
-        pos = nextPosition;
-      }
-    }
-    step1(input);
-  }
-
-  return sum.toString();
-}
+  return visited;
+};
 
 const parseInput = (input: string[]): string[][] => {
   return input.map((line) => line.split(""));
@@ -93,6 +97,11 @@ const parseInput = (input: string[]): string[][] => {
 
 const getStringPosition = (x: number, y: number): string => {
   return `${x},${y}`;
+};
+
+const getPositionFromString = (str: string): [number, number] => {
+  const [x, y] = str.split(",");
+  return [parseInt(x), parseInt(y)];
 };
 
 const getStringPositionWithDir = (

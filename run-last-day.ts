@@ -9,7 +9,7 @@ const handleFailedTest = () => {
   Deno.exit(1);
 };
 
-runLastDayTests().then((res) => {
+await runLastDayTests().then((res) => {
   if (res) {
     return handleSuccess();
   }

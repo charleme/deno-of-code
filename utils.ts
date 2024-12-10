@@ -22,21 +22,6 @@ function getDayCodeFilePath(day: number) {
   return `${getDayFolder(day)}/code.ts`;
 }
 
-const getTestCount = (day: number, step: 1 | 2): number => {
-  let count = 0;
-  try {
-    while (
-      count < 50 &&
-      Deno.statSync(getTestFilePaths(day, count + 1, step).input).isFile
-    ) {
-      count++;
-    }
-  } catch (_) {
-    return count;
-  }
-  return count;
-};
-
 const getLastDayNumber = () => {
   let count = 1;
   try {
@@ -51,46 +36,79 @@ const getLastDayNumber = () => {
   return count - 1;
 };
 
-const runDayTests = async (day: number, step: 1 | 2) => {
-  const testCount = getTestCount(day, step);
+const resolverSchema = v.pipe(
+  v.function(),
+  v.args(v.tuple([v.array(v.string())])),
+  v.returns(v.string()),
+);
 
-  for (let i = 0; i < testCount; i++) {
-    const { input, output } = getTestFilePaths(day, i + 1, step);
-    const inputContent = Deno.readTextFileSync(input);
-    const outputContent = Deno.readTextFileSync(output);
+type Resolver = v.InferOutput<typeof resolverSchema>;
 
+const runTest = async (
+  day: number,
+  step: 1 | 2,
+  testNumber: number,
+  resolver: Resolver,
+) => {
+  const { input, output } = getTestFilePaths(day, testNumber + 1, step);
+
+  try {
+    const [inputContent, outputContent] = await Promise.all([
+      await Deno.readTextFile(input),
+      await Deno.readTextFile(output),
+    ]);
     const inputLines = inputContent.split(/\r?\n/g);
     const outputLines = outputContent;
 
-    const { [`step${step}`]: codeFunction } = await import(
+    const startTime = Date.now();
+
+    const result = resolver(inputLines);
+
+    const duration = Date.now() - startTime;
+
+    const isSuccess = result === outputLines;
+
+    const icon = isSuccess ? "\x1b[32m✔\x1b[0m" : "\x1b[31m❌\x1b[0m";
+    const suffix = isSuccess ? "passed" : "failed";
+    console.log(
+      `${icon} Day ${day}, Step ${step}: Test ${testNumber + 1} ${suffix}`,
+    );
+    console.log(
+      `\tExpected: ${outputLines}, Got: ${result}, Duration: ${duration}ms\n`,
+    );
+
+    return isSuccess;
+  } catch (error: unknown) {
+    // consider if there is no test file, it's a success
+    if (error instanceof Deno.errors.NotFound) {
+      return true;
+    }
+    throw error;
+  }
+};
+
+export const runDayTests = async (day: number, step: 1 | 2) => {
+  try {
+    const { [`step${step}`]: resolver } = await import(
       "./" + getDayCodeFilePath(day)
     );
-    const codeSchema = v.pipe(
-      v.function(),
-      v.args(v.tuple([v.array(v.string())])),
-      v.returns(v.string()),
-    );
 
-    const parsedCode = v.parse(codeSchema, codeFunction);
+    const parsedResolver = v.parse(resolverSchema, resolver);
 
-    const result = parsedCode(inputLines);
-
-    console.log(`Expected: ${outputLines}`);
-    console.log(`Got: ${result}`);
-    if (result !== outputLines) {
-      console.log(
-        `Day ${day}, Step ${step}: Test ${i + 1}/${testCount} failed`,
-      );
-
-      return false;
+    for (let i = 0; i < 100; i++) {
+      if (!await runTest(day, step, i, parsedResolver)) {
+        return false;
+      }
     }
-    console.log(
-      `Day ${day}, Step ${step}: Test ${i + 1}/${testCount} passed\n`,
-    );
-  }
-  console.log(`Day ${day}, Step ${step}: All tests passed\n`);
 
-  return true;
+    return true;
+  } catch (error) {
+    // consider if there is no test file, it's a success
+    if (error instanceof TypeError) {
+      return true;
+    }
+    throw error;
+  }
 };
 
 const runLastDayTests = async () => {
@@ -104,16 +122,15 @@ const runLastDayTests = async () => {
 };
 
 const runAllTests = async () => {
-  const lastDay = getLastDayNumber();
-  for (let i = 1; i <= lastDay; i++) {
+  for (let i = 1; i <= 25; i++) {
     if (!await runDayTests(i, 1)) {
       return false;
     }
+
     if (!await runDayTests(i, 2)) {
       return false;
     }
   }
-  return true;
 };
 
 export { getLastDayNumber, runAllTests, runLastDayTests };

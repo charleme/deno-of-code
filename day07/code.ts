@@ -54,7 +54,7 @@ export const hasValidOperation = (
   );
 };
 
-export const parseInput = (input: string[]) => {
+const parseInput = (input: string[]) => {
   return input.map((line) => {
     const [stringResult, rest] = line.split(": ");
 

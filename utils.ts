@@ -88,27 +88,23 @@ const runTest = async (
 };
 
 export const runDayTests = async (day: number, step: 1 | 2) => {
-  try {
-    const { [`step${step}`]: resolver } = await import(
-      "./" + getDayCodeFilePath(day)
-    );
-
-    const parsedResolver = v.parse(resolverSchema, resolver);
-
-    for (let i = 0; i < 100; i++) {
-      if (!await runTest(day, step, i, parsedResolver)) {
-        return false;
-      }
-    }
-
-    return true;
-  } catch (error) {
+  const { [`step${step}`]: resolver } = await import(
+    "./" + getDayCodeFilePath(day)
+  ).catch((_) => false);
+  if (!resolver) {
     // consider if there is no test file, it's a success
-    if (error instanceof TypeError) {
-      return true;
-    }
-    throw error;
+    return true;
   }
+
+  const parsedResolver = v.parse(resolverSchema, resolver);
+
+  for (let i = 0; i < 100; i++) {
+    if (!await runTest(day, step, i, parsedResolver)) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 const runLastDayTests = async () => {
@@ -131,6 +127,8 @@ const runAllTests = async () => {
       return false;
     }
   }
+
+  return true;
 };
 
 export { getLastDayNumber, runAllTests, runLastDayTests };

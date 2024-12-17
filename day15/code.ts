@@ -35,11 +35,6 @@ export function step2(input: string[]): string {
     if (result !== false) {
       lanternFishCoord = result;
     }
-    console.log(
-      map.map((line) => line.join("")).join("\n"),
-      { moveCoord },
-      "\n",
-    );
   }
 
   const boxCoords = findAllBoxCoords(map);

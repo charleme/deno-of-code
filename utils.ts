@@ -88,7 +88,7 @@ const runTest = async (
 };
 
 export const runDayTests = async (day: number, step: 1 | 2) => {
-  const { [`step${step}`]: resolver } = await import(
+  const { [`step${step}`]: resolver, ...rest } = await import(
     "./" + getDayCodeFilePath(day)
   ).catch((_) => false);
   if (!resolver) {
